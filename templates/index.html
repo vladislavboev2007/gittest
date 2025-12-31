@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SalesDB Management System</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .table-switcher {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+        .table-switcher button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .active-table {
+            background-color: #4CAF50;
+            color: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .form-container {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        input, select {
+            padding: 8px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .message {
+            padding: 10px;
+            background-color: #d4edda;
+            color: #155724;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SalesDB Management System</h1>
+
+        <div class="table-switcher">
+            <button onclick="switchTable('home')" class="{{ 'active-table' if table == 'home' else '' }}">Home</button>
+            <button onclick="switchTable('percent')" class="{{ 'active-table' if table == 'percent' else '' }}">Percent ({{ counts.percent if counts else 0 }})</button>
+            <button onclick="switchTable('products')" class="{{ 'active-table' if table == 'products' else '' }}">Products ({{ counts.products if counts else 0 }})</button>
+            <button onclick="switchTable('profit')" class="{{ 'active-table' if table == 'profit' else '' }}">Profit ({{ counts.profit if counts else 0 }})</button>
+            <button onclick="switchTable('register')" class="{{ 'active-table' if table == 'register' else '' }}">Register ({{ counts.register if counts else 0 }})</button>
+        </div>
+
+        {% if message %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
+
+        {% if table == 'home' %}
+        <div class="dashboard">
+            <h2>Database Overview</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Percent Table</h3>
+                    <p>Records: {{ counts.percent }}</p>
+                    <p>Stores percentage rates with dates</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Products Table</h3>
+                    <p>Records: {{ counts.products }}</p>
+                    <p>Product catalog with descriptions</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Profit Table</h3>
+                    <p>Records: {{ counts.profit }}</p>
+                    <p>Profit calculations with rates</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Register Table</h3>
+                    <p>Records: {{ counts.register }}</p>
+                    <p>Sales transactions with calculations</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if table == 'percent' %}
+        <h2>Percent Table</h2>
+        <div class="form-container">
+            <h3>Add New Percent Record</h3>
+            <form action="/percent/" method="post">
+                <div class="form-group">
+                    <label>Rate (0.00 to 0.99):</label>
+                    <input type="number" name="rate" step="0.01" min="0" max="0.99" required>
+                </div>
+                <div class="form-group">
+                    <label>Date:</label>
+                    <input type="date" name="ts" value="{{ now_date }}">
+                </div>
+                <button type="submit">Add Record</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Rate</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.idpercent }}</td>
+                    <td>{{ item.ts }}</td>
+                    <td>{{ item.rate }}</td>
+                    <td>
+                        <button onclick="deleteItem('percent', {{ item.idpercent }})">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if table == 'products' %}
+        <h2>Products Table</h2>
+        <div class="form-container">
+            <h3>Add New Product</h3>
+            <form action="/products/" method="post">
+                <div class="form-group">
+                    <label>Product ID:</label>
+                    <input type="number" name="idproducts" required>
+                </div>
+                <div class="form-group">
+                    <label>Title:</label>
+                    <input type="text" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description:</label>
+                    <input type="text" name="descriptions" placeholder="Not description.">
+                </div>
+                <button type="submit">Add Product</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.idproducts }}</td>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.descriptions }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if table == 'profit' %}
+        <h2>Profit Table</h2>
+        <div class="form-container">
+            <h3>Add New Profit Record</h3>
+            <form action="/profit/" method="post">
+                <div class="form-group">
+                    <label>Register ID:</label>
+                    <input type="number" name="idregister" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantity:</label>
+                    <input type="number" name="quantice" required>
+                </div>
+                <div class="form-group">
+                    <label>Price:</label>
+                    <input type="number" step="0.01" name="price" required>
+                </div>
+                <div class="form-group">
+                    <label>Total:</label>
+                    <input type="number" step="0.01" name="total" required>
+                </div>
+                <button type="submit">Add Record</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>Register ID</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th>Net Profit</th>
+                    <th>Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.idprofit }}</td>
+                    <td>{{ item.ts }}</td>
+                    <td>{{ item.idregister }}</td>
+                    <td>{{ item.quantice }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>{{ item.total }}</td>
+                    <td>{{ item.n_profit }}</td>
+                    <td>{{ item.rate }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if table == 'register' %}
+        <h2>Register Table</h2>
+        <div class="form-container">
+            <h3>Add New Register Record</h3>
+            <form action="/register/" method="post">
+                <div class="form-group">
+                    <label>Product ID:</label>
+                    <input type="number" name="product" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantity:</label>
+                    <input type="number" name="quantite" required>
+                </div>
+                <div class="form-group">
+                    <label>Price:</label>
+                    <input type="number" step="0.01" name="price" required>
+                </div>
+                <button type="submit">Add Record</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th>Net Total</th>
+                    <th>Net Quantity</th>
+                    <th>Net Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.idregister }}</td>
+                    <td>{{ item.ts }}</td>
+                    <td>
+                        {% if show_products and item.product_rel %}
+                            {{ item.product_rel.title }} (ID: {{ item.product }})
+                        {% else %}
+                            {{ item.product }}
+                        {% endif %}
+                    </td>
+                    <td>{{ item.quantite }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>{{ item.total }}</td>
+                    <td>{{ item.n_total }}</td>
+                    <td>{{ item.n_quantite }}</td>
+                    <td>{{ item.n_price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <script>
+        function switchTable(tableName) {
+            window.location.href = `/switch/${tableName}`;
+        }
+
+        function deleteItem(table, id) {
+            if (confirm('Are you sure you want to delete this item?')) {
+                axios.delete(`/${table}/${id}`)
+                    .then(response => {
+                        alert('Item deleted successfully');
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        alert('Error deleting item');
+                    });
+            }
+        }
+
+        // Auto-refresh every 30 seconds
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>
